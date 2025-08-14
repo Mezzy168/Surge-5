@@ -1,20 +1,38 @@
-const FAILURE_THRESHOLD = 2; // 从3次降至2次
-const BAN_TIME = 600; // 从5分钟增至10分钟
+// dns-failover-compatible.js
+const FAILURE_THRESHOLD = 2;
+const BAN_TIME = 600;
 
-$event.listen("DNS_TIMEOUT", (event) => {
-  failureCount++;
-  
-  if (failureCount >= FAILURE_THRESHOLD) {
-    console.warn(`DNS服务${event.server}故障，禁用${BAN_TIME}秒`);
-    $network.banDNS(event.server, BAN_TIME);
+// 使用直接检测替代事件监听
+function handleDNSTimeout() {
+  try {
+    const failures = $diagnosis.dnsFailureCount || 0;
     
-    // 切换到备份DNS（优化列表）
-    const backupDNS = ["https://dns.alidns.com/dns-query", "119.29.29.29"];
-    $network.switchDNS(backupDNS);
-    
-    // 新增：强制刷新DNS缓存
-    $cacheManager.purge("dns", 1.0);
-    
-    failureCount = 0;
+    if (failures >= FAILURE_THRESHOLD) {
+      const failedServer = $diagnosis.lastFailedDNSServer || "unknown";
+      console.warn(`[兼容模式] DNS服务${failedServer}故障，禁用${BAN_TIME}秒`);
+      
+      if ($network.banDNS) {
+        $network.banDNS(failedServer, BAN_TIME);
+      }
+      
+      // 切换到备份DNS
+      const backupDNS = ["https://dns.alidns.com/dns-query", "119.29.29.29"];
+      $network.switchDNS(backupDNS);
+      
+      // 强制刷新DNS缓存
+      if ($cacheManager && $cacheManager.purge) {
+        $cacheManager.purge("dns", 1.0);
+      }
+      
+      return {action: "dns_failover", server: failedServer};
+    }
+    return {status: "正常"};
+  } catch (e) {
+    console.error(`DNS故障切换错误: ${e.message}`);
+    return {error: e.message};
   }
-});
+}
+
+// 主执行逻辑
+const result = handleDNSTimeout();
+$done(result);

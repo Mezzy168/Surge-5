@@ -1,0 +1,19 @@
+const FAILURE_THRESHOLD = 3;
+const BAN_TIME = 300; // 5分钟
+
+let failureCount = 0;
+
+$event.listen("DNS_TIMEOUT", (event) => {
+  failureCount++;
+  
+  if (failureCount >= FAILURE_THRESHOLD) {
+    console.warn(`DNS服务${event.server}故障，禁用${BAN_TIME}秒`);
+    $network.banDNS(event.server, BAN_TIME);
+    
+    // 切换到备份DNS
+    const backupDNS = ["2402:4e00::53", "119.29.29.29"];
+    $network.switchDNS(backupDNS);
+    
+    failureCount = 0;
+  }
+});

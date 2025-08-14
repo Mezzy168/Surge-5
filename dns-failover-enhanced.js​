@@ -1,0 +1,20 @@
+const FAILURE_THRESHOLD = 2; // 从3次降至2次
+const BAN_TIME = 600; // 从5分钟增至10分钟
+
+$event.listen("DNS_TIMEOUT", (event) => {
+  failureCount++;
+  
+  if (failureCount >= FAILURE_THRESHOLD) {
+    console.warn(`DNS服务${event.server}故障，禁用${BAN_TIME}秒`);
+    $network.banDNS(event.server, BAN_TIME);
+    
+    // 切换到备份DNS（优化列表）
+    const backupDNS = ["https://dns.alidns.com/dns-query", "119.29.29.29"];
+    $network.switchDNS(backupDNS);
+    
+    // 新增：强制刷新DNS缓存
+    $cacheManager.purge("dns", 1.0);
+    
+    failureCount = 0;
+  }
+});

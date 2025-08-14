@@ -1,0 +1,20 @@
+const MEM_THRESHOLD = 20; // 从25MB降至20MB
+const CLEAN_AGGRESSIVENESS = 0.8; // 清理强度从70%提升至80%
+
+$event.listen("MEMORY_USAGE", (usage) => {
+  if (usage > MEM_THRESHOLD) {
+    const toRelease = Math.floor((usage - MEM_THRESHOLD) * CLEAN_AGGRESSIVENESS);
+    console.log(`内存超标: ${usage}MB, 释放${toRelease}MB`);
+    
+    // 增强清理策略
+    $cacheManager.purge("dns", toRelease * 0.5); // DNS缓存清理比例提升
+    $network.releaseIdleConnections(0.7); // 释放70%空闲连接
+    $objectPool.cleanStaleObjects(0.6); // 清理60%过期对象
+    
+    // 新增：强制回收高内存对象
+    $objectPool.releaseObjectsByType("SGSocket", 0.4);
+    $objectPool.releaseObjectsByType("SGTrojanConnector", 0.5);
+    
+    $done({released: toRelease});
+  }
+});

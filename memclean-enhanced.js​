@@ -1,20 +1,47 @@
-const MEM_THRESHOLD = 20; // 从25MB降至20MB
-const CLEAN_AGGRESSIVENESS = 0.8; // 清理强度从70%提升至80%
+// memclean-compatible.js
+const MEM_THRESHOLD = 20;
+const CLEAN_AGGRESSIVENESS = 0.8;
 
-$event.listen("MEMORY_USAGE", (usage) => {
-  if (usage > MEM_THRESHOLD) {
-    const toRelease = Math.floor((usage - MEM_THRESHOLD) * CLEAN_AGGRESSIVENESS);
-    console.log(`内存超标: ${usage}MB, 释放${toRelease}MB`);
+// 使用兼容性检查替代$event
+function checkMemory() {
+  try {
+    // 新方法获取内存使用
+    const usage = $script.memoryUsage ? $script.memoryUsage() : 
+                 $surge.memoryInfo ? $surge.memoryInfo().usage : 
+                 -1;
     
-    // 增强清理策略
-    $cacheManager.purge("dns", toRelease * 0.5); // DNS缓存清理比例提升
-    $network.releaseIdleConnections(0.7); // 释放70%空闲连接
-    $objectPool.cleanStaleObjects(0.6); // 清理60%过期对象
-    
-    // 新增：强制回收高内存对象
-    $objectPool.releaseObjectsByType("SGSocket", 0.4);
-    $objectPool.releaseObjectsByType("SGTrojanConnector", 0.5);
-    
-    $done({released: toRelease});
+    if (usage > MEM_THRESHOLD && usage !== -1) {
+      const toRelease = Math.floor((usage - MEM_THRESHOLD) * CLEAN_AGGRESSIVENESS);
+      console.log(`[兼容模式] 内存超标: ${usage}MB, 释放${toRelease}MB`);
+      
+      // 安全清理方法
+      if ($cacheManager && $cacheManager.purge) {
+        $cacheManager.purge("dns", toRelease * 0.5);
+      }
+      
+      if ($network && $network.releaseIdleConnections) {
+        $network.releaseIdleConnections(0.7);
+      }
+      
+      if ($objectPool) {
+        if ($objectPool.cleanStaleObjects) {
+          $objectPool.cleanStaleObjects(0.6);
+        }
+        if ($objectPool.releaseObjectsByType) {
+          $objectPool.releaseObjectsByType("SGSocket", 0.4);
+          $objectPool.releaseObjectsByType("SGTrojanConnector", 0.5);
+        }
+      }
+      
+      return {released: toRelease};
+    }
+    return {status: "正常"};
+  } catch (e) {
+    console.error(`内存监控错误: ${e.message}`);
+    return {error: e.message};
   }
-});
+}
+
+// 主执行逻辑
+const result = checkMemory();
+$done(result);

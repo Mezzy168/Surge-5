@@ -1,4 +1,4 @@
-const MEM_THRESHOLD = 25; // MB
+const MEM_THRESHOLD = 30; // MB
 const CLEAN_AGGRESSIVENESS = 0.7; // 清理强度
 
 $event.listen("MEMORY_USAGE", (usage) => {
@@ -17,4 +17,5 @@ $event.listen("MEMORY_USAGE", (usage) => {
     
     $done({released: toRelease});
   }
+
 });

@@ -1,24 +1,32 @@
-// dns-monitor-enhanced.js
+// dns-monitor-ultimate.js
 const CRITICAL_DOMAINS = [
-  "p207-contacts.icloud.com",
-  "dns.google",
-  "apple.com"
+  "apple.com",
+  "icloud.com",
+  "dns.google"
 ];
+const TIMEOUT = 3000; // 3秒超时
 
-function testDNS(domain) {
+async function testDomain(domain) {
   return new Promise((resolve) => {
+    let timer = setTimeout(() => resolve(false), TIMEOUT);
+    
     $network.resolve(domain, (address) => {
-      resolve(!!address); // 返回解析是否成功
+      clearTimeout(timer);
+      resolve(!!address);
     });
   });
 }
 
 (async () => {
-  for (const domain of CRITICAL_DOMAINS) {
-    const success = await testDNS(domain);
+  const results = await Promise.all(
+    CRITICAL_DOMAINS.map(domain => testDomain(domain))
+  );
+  
+  results.forEach((success, index) => {
     if (!success) {
+      const domain = CRITICAL_DOMAINS[index];
       $notification.post("DNS警报", `${domain} 解析失败`, "触发自动修复");
       $surge.event.emit("DNS_FAILURE", {domain});
     }
-  }
+  });
 })();

@@ -1,4 +1,4 @@
-// dns-monitor-enhanced.js 核心功能
+// dns-monitor-enhanced.js
 const CRITICAL_DOMAINS = [
   "p207-contacts.icloud.com",
   "dns.google",
@@ -6,16 +6,19 @@ const CRITICAL_DOMAINS = [
 ];
 
 function testDNS(domain) {
-  const result = $dns.resolve(domain);
-  if (!result || result.answer.length === 0) {
-    $surge.event.emit("DNS_FAILURE", {domain});
-    return false;
-  }
-  return true;
+  return new Promise((resolve) => {
+    $network.resolve(domain, (address) => {
+      resolve(!!address); // 返回解析是否成功
+    });
+  });
 }
 
-CRITICAL_DOMAINS.forEach(domain => {
-  if (!testDNS(domain)) {
-    $notification.post("DNS警报", `${domain} 解析失败`, "触发自动修复");
+(async () => {
+  for (const domain of CRITICAL_DOMAINS) {
+    const success = await testDNS(domain);
+    if (!success) {
+      $notification.post("DNS警报", `${domain} 解析失败`, "触发自动修复");
+      $surge.event.emit("DNS_FAILURE", {domain});
+    }
   }
-});
+})();

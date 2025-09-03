@@ -13,6 +13,9 @@ function cleanMemory() {
     }
 }
 
+// 初始化执行
+cleanMemory();
+
 // 定时执行清理
 $surge.setInterval(cleanMemory, CLEAN_INTERVAL);
 
@@ -22,9 +25,7 @@ $surge.event.listen('NETWORK_CHANGED', cleanMemory);
 // 内存警告时执行清理
 $surge.event.listen('MEMORY_WARNING', () => {
     console.log("收到内存警告，执行紧急清理");
-    $surge.releaseIdleResources();
-    $surge.closeIdleConnections();
+    cleanMemory();
 });
 
-// 初始化时执行一次清理
-cleanMemory();
+$done();

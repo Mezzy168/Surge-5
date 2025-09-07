@@ -1,4 +1,4 @@
-// smart-power-manager.js (最终版)
+// smart-power-manager-fixed.js
 const RESOURCE_THRESHOLD = 70;  // 系统资源使用百分比阈值
 const IDLE_PERIOD = 30;         // 空闲时间阈值(分钟)
 const NIGHT_MODE_START = 23;    // 23:00
@@ -74,22 +74,43 @@ function managePowerSaving() {
     }
 }
 
-// 高效触发机制
-$surge.event.listen("NETWORK_CHANGED", () => {
-    // 仅在网络状态变化时触发
-    managePowerSaving();
-});
+// === 初始化阶段 ===
+// 检查是否支持事件API
+const isEventAPISupported = typeof $surge.event !== 'undefined' && 
+                           typeof $surge.event.listen === 'function';
 
-$surge.event.listen("MEMORY_WARNING", () => {
-    // 内存告警时立即触发
-    managePowerSaving();
-});
+// 检查是否支持定时器API
+const isTimerAPISupported = typeof $timer !== 'undefined' && 
+                           typeof $timer.schedule === 'function';
 
-// 定时检查（低频率）
-$timer.schedule({
-    interval: CHECK_INTERVAL,
-    handler: managePowerSaving
-});
+// 支持事件API时注册监听器
+if (isEventAPISupported) {
+    console.log("注册事件监听器");
+    $surge.event.listen("NETWORK_CHANGED", () => {
+        console.log("网络状态变化触发");
+        managePowerSaving();
+    });
+    
+    $surge.event.listen("MEMORY_WARNING", () => {
+        console.log("内存告警触发");
+        managePowerSaving();
+    });
+} else {
+    console.log("事件API不可用，跳过注册");
+}
+
+// 支持定时器API时设置定时检查
+if (isTimerAPISupported) {
+    console.log("设置定时检查");
+    $timer.schedule({
+        interval: CHECK_INTERVAL,
+        handler: managePowerSaving
+    });
+} else {
+    console.log("定时器API不可用，跳过设置");
+}
 
 // 初始执行
 managePowerSaving();
+
+$done();

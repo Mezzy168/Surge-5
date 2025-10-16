@@ -1,4 +1,4 @@
-// smart-power-manager-fixed.js
+// smart-power.js - Surge 5 智能省电脚本
 const RESOURCE_THRESHOLD = 70;  // 系统资源使用百分比阈值
 const IDLE_PERIOD = 30;         // 空闲时间阈值(分钟)
 const NIGHT_MODE_START = 23;    // 23:00

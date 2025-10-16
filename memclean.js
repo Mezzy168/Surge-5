@@ -1,4 +1,4 @@
-// memclean-fixed.js (Surge 5兼容版)
+// memclean.js - Surge 5 内存清理脚本
 const MEMORY_THRESHOLD = 25; // MB
 const CLEAN_INTERVAL = 600000; // 10分钟
 

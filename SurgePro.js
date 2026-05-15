@@ -6,7 +6,7 @@ $httpClient.get({
     headers: { "X-Key": API_KEY }
 }, function(error, response, data) {
     var panel = {
-        title: "Surge 运行状态",
+        title: "Surge 运行状态ok",
         icon: "rocket.fill",
         "icon-color": "#007AFF",
         content: ""

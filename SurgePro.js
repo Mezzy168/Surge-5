@@ -1,4 +1,4 @@
-var API_URL = "http://127.0.0.1:6171/v1/info";
+var API_URL = "http://127.0.0.1:6171/v1/traffic"; // 这里修正为正确的官方 API 路径
 var API_KEY = "1234";
 
 $httpClient.get({
@@ -20,7 +20,7 @@ $httpClient.get({
     }
 
     if (response && response.status !== 200) {
-        panel.content = "接口无响应 (状态码: " + response.status + ")\n请检查 http-api 配置。";
+        panel.content = "接口响应错误 (状态码: " + response.status + ")";
         panel["icon-color"] = "#FF9500";
         $done(panel);
         return;
@@ -28,7 +28,10 @@ $httpClient.get({
 
     try {
         var body = JSON.parse(data);
-        var uptime = body.uptime || 0;
+        
+        // 从流量接口获取系统启动时间戳，并计算运行时长
+        var startTime = body.startTime || (new Date().getTime() / 1000);
+        var uptime = Math.floor((new Date().getTime() / 1000) - startTime);
         
         var days = Math.floor(uptime / 86400);
         var hours = Math.floor((uptime % 86400) / 3600);
